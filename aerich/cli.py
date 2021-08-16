@@ -55,9 +55,14 @@ def coro(f):
     show_default=True,
     help="Name of section in .ini file to use for aerich config.",
 )
+@click.option(
+    "--all-apps",
+    is_flag=True,
+    help="migrate all apps (to match init-db behavior)",
+)
 @click.pass_context
 @coro
-async def cli(ctx: Context, config, app, name):
+async def cli(ctx: Context, config, app, name, all_apps):
     ctx.ensure_object(dict)
     ctx.obj["config_file"] = config
     ctx.obj["name"] = name
@@ -73,11 +78,12 @@ async def cli(ctx: Context, config, app, name):
         src_folder = parser[name].get("src_folder", CONFIG_DEFAULT_VALUES["src_folder"])
         add_src_path(src_folder)
         tortoise_config = get_tortoise_config(ctx, tortoise_orm)
-        app = app or list(tortoise_config.get("apps").keys())[0]
-        command = Command(tortoise_config=tortoise_config, app=app, location=location)
+        default_app = list(tortoise_config.get("apps").keys())[0] # awinter
+        app = None if all_apps else (app or default_app) # awinter
+        command = Command(tortoise_config=tortoise_config, app=app, location=location, default_app=default_app)
         ctx.obj["command"] = command
         if invoked_subcommand != "init-db":
-            if not Path(location, app).exists():
+            if not all_apps and not Path(location, app).exists():
                 raise UsageError("You must exec init-db first", ctx=ctx)
             await command.init()
 
@@ -227,7 +233,7 @@ async def init(ctx: Context, tortoise_orm, location, src_folder):
 @coro
 async def init_db(ctx: Context, safe):
     command = ctx.obj["command"]
-    app = command.app
+    app = command.app or command.default_app
     dirname = Path(command.location, app)
     try:
         await command.init_db(safe)

@@ -44,13 +44,16 @@ class Migrate:
         )
 
     @classmethod
-    def _get_model(cls, model: str) -> Type[Model]:
-        return Tortoise.apps.get(cls.app).get(model)
+    def _get_model(cls, model: str, app: str) -> Type[Model]:
+        return Tortoise.apps.get(app).get(model)
 
     @classmethod
     async def get_last_version(cls) -> Optional[Aerich]:
         try:
-            return await Aerich.filter(app=cls.app).first()
+            if cls.app is None:
+                return await Aerich.filter().first()
+            else:
+                return await Aerich.filter(app=cls.app).first()
         except OperationalError:
             pass
 
@@ -66,7 +69,7 @@ class Migrate:
         await Tortoise.init(config=config)
         last_version = await cls.get_last_version()
         cls.app = app
-        cls.migrate_location = Path(location, app)
+        cls.migrate_location = Path(location, app or list(Tortoise.apps)[0])
         if last_version:
             cls._last_version_content = last_version.content
 
@@ -166,12 +169,13 @@ class Migrate:
         :param upgrade:
         :return:
         """
-        _aerich = f"{cls.app}.{cls._aerich}"
+        aerich_app = next(key for key, val in Tortoise.apps.items() if cls._aerich in val)
+        _aerich = f"{cls.app}.{cls._aerich}" if cls.app else f"{aerich_app}.{cls._aerich}"
         old_models.pop(_aerich, None)
         new_models.pop(_aerich, None)
 
         for new_model_str, new_model_describe in new_models.items():
-            model = cls._get_model(new_model_describe.get("name").split(".")[1])
+            model = cls._get_model(new_model_describe.get("name").split(".")[1], new_model_describe.get('app'))
 
             if new_model_str not in old_models.keys():
                 if upgrade:

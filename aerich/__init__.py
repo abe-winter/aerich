@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from tortoise import Tortoise, generate_schema_for_client
 from tortoise.exceptions import OperationalError
@@ -26,10 +26,12 @@ class Command:
         tortoise_config: dict,
         app: str = "models",
         location: str = "./migrations",
+        default_app: Optional[str] = None,
     ):
         self.tortoise_config = tortoise_config
         self.app = app
         self.location = location
+        self.default_app = default_app
         Migrate.app = app
 
     async def init(self):
@@ -117,11 +119,11 @@ class Command:
     async def init_db(self, safe: bool):
         location = self.location
         app = self.app
-        dirname = Path(location, app)
+        dirname = Path(location, app or self.default_app)
         dirname.mkdir(parents=True)
 
         await Tortoise.init(config=self.tortoise_config)
-        connection = get_app_connection(self.tortoise_config, app)
+        connection = get_app_connection(self.tortoise_config, app or self.default_app)
         await generate_schema_for_client(connection, safe)
 
         schema = get_schema_sql(connection, safe)
@@ -129,7 +131,7 @@ class Command:
         version = await Migrate.generate_version()
         await Aerich.create(
             version=version,
-            app=app,
+            app=app or self.default_app,
             content=get_models_describe(app),
         )
         content = {
