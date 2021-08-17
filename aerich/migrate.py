@@ -175,7 +175,9 @@ class Migrate:
         new_models.pop(_aerich, None)
 
         for new_model_str, new_model_describe in new_models.items():
-            model = cls._get_model(new_model_describe.get("name").split(".")[1], new_model_describe.get('app'))
+            model = cls._get_model(
+                new_model_describe.get("name").split(".")[1], new_model_describe.get("app")
+            )
 
             if new_model_str not in old_models.keys():
                 if upgrade:

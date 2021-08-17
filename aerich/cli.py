@@ -78,9 +78,11 @@ async def cli(ctx: Context, config, app, name, all_apps):
         src_folder = parser[name].get("src_folder", CONFIG_DEFAULT_VALUES["src_folder"])
         add_src_path(src_folder)
         tortoise_config = get_tortoise_config(ctx, tortoise_orm)
-        default_app = list(tortoise_config.get("apps").keys())[0] # awinter
-        app = None if all_apps else (app or default_app) # awinter
-        command = Command(tortoise_config=tortoise_config, app=app, location=location, default_app=default_app)
+        default_app = list(tortoise_config.get("apps").keys())[0]
+        app = None if all_apps else (app or default_app)
+        command = Command(
+            tortoise_config=tortoise_config, app=app, location=location, default_app=default_app
+        )
         ctx.obj["command"] = command
         if invoked_subcommand != "init-db":
             if not all_apps and not Path(location, app).exists():

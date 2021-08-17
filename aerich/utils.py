@@ -32,7 +32,7 @@ def get_app_connection_name(config, app_name: str) -> str:
     :param app_name:
     :return:
     """
-    app = config['apps'].get(app_name) if app_name else list(config['apps'].values())[0]
+    app = config["apps"].get(app_name) if app_name else list(config["apps"].values())[0]
     if app:
         return app.get("default_connection", "default")
     raise BadOptionUsage(
@@ -140,9 +140,9 @@ def get_models_describe(app: str) -> Dict:
     ret = {}
     apps = [app] if app else Tortoise.apps.keys()
     for app in apps:
-      for model in Tortoise.apps.get(app).values():
-          describe = model.describe()
-          ret[describe.get("name")] = describe
+        for model in Tortoise.apps.get(app).values():
+            describe = model.describe()
+            ret[describe.get("name")] = describe
     return ret
 
 
