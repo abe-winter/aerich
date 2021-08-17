@@ -41,7 +41,7 @@ class Command:
         migrated = []
         for version_file in Migrate.get_all_version_files():
             try:
-                exists = await Aerich.exists(version=version_file, app=self.app)
+                exists = await Aerich.exists(version=version_file, app=self.app or self.default_app)
             except OperationalError:
                 exists = False
             if not exists:
@@ -55,7 +55,7 @@ class Command:
                         await conn.execute_script(upgrade_query)
                     await Aerich.create(
                         version=version_file,
-                        app=self.app,
+                        app=self.app or self.default_app,
                         content=get_models_describe(self.app),
                     )
                 migrated.append(version_file)
